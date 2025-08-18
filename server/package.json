@@ -19,7 +19,7 @@
     "@langchain/textsplitters": "^0.1.0",
     "@types/express": "^5.0.1",
     "cors": "^2.8.5",
-    "dotenv": "^17.0.1",
+    "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "langchain": "^0.3.19",
     "multer": "^2.0.1",

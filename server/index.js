@@ -8,8 +8,7 @@ import { addPDFToVectorStore } from "./embeddings.js";
 import { pool, testConnection } from './database.js';
 import path from 'node:path';
 import fs from 'node:fs';
-// const path = require('path');
-// const fs = require('fs');
+
 
 const port = process.env.PORT || 3000;
 const app = express();
