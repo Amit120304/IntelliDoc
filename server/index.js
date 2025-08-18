@@ -4,9 +4,12 @@ import { agent } from './agent.js';
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
 import { v4 as uuidv4 } from 'uuid';
-import {addPDFToVectorStore} from "./embeddings.js";
+import { addPDFToVectorStore } from "./embeddings.js";
 import { pool, testConnection } from './database.js';
-
+import path from 'node:path';
+import fs from 'node:fs';
+// const path = require('path');
+// const fs = require('fs');
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -21,15 +24,20 @@ app.get('/', (req, res) => {
 // Configure multer for PDF uploads
 const upload = multer({
   storage: multer.memoryStorage(),
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files allowed'), false);
-    }
-  },
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+
 });
+// const upload = multer({
+//   storage: multer.diskStorage({
+//     destination: (req, file, cb) => cb(null, './uploads'),
+//     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname),
+//   }),
+//   limits: { fileSize: 10 * 1024 * 1024 },
+//   fileFilter: (req, file, cb) => {
+//     if (file.mimetype === 'application/pdf') cb(null, true);
+//     else cb(new Error('Only PDF files allowed'), false);
+//   }
+// });
 
 testConnection().catch(err => {
   console.error('Failed to connect to Neon database on startup:', err);
@@ -49,6 +57,11 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
 
       console.log(`📄 Processing PDF: ${req.file.originalname} (${req.file.size} bytes)`);
 
+      console.log(req.file);
+
+      // const filePath = path.join(__dirname, 'uploads', Date.now() + '-' + req.file.originalname);
+      // fs.writeFileSync(filePath, req.file.buffer);
+
       const pdfBuffer = req.file.buffer;
       const pdfData = await pdfParse(pdfBuffer);
 
@@ -60,7 +73,18 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
       const filename = req.file.originalname;
       const file_size = req.file.size;
 
+      const uploadsDir = './uploads';
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const savedFilename = `${Date.now()}-${filename}`;
+      const filePath = path.join(uploadsDir, savedFilename);
+      fs.writeFileSync(filePath, pdfBuffer);
+
+
       console.log(`🔄 Adding PDF to vector store...`);
+      // console.log(typeof document_id);
       const result = await addPDFToVectorStore({
         text: pdfData.text,
         document_id,
@@ -105,11 +129,14 @@ app.post('/generate', async (req, res) => {
         error: 'Query and document_id are required'
       });
     }
+// console.log(document_id );
+    // Include document_id in the message content itself
+    const enhancedQuery = `Document ID: ${document_id}\nUser Query: ${query}`;
 
     const results = await agent.invoke({
       messages: [{
         role: 'user',
-        content: query,
+        content: enhancedQuery,
       }],
     }, {
       configurable: {
@@ -189,6 +216,7 @@ app.get('/document/:document_id', async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (error) {
+    console.log(`error while fetching document->${document_id}`, error);
     res.status(500).json({ error: error.message });
   }
 });
