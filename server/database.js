@@ -10,7 +10,7 @@ export const pool = new Pool({
         rejectUnauthorized: false // Required for Neon
     },
     // Neon-optimized settings
-    max: 5, // Reduced for serverless (Neon recommends 5-10)
+    max: 10, // Reduced for serverless (Neon recommends 5-10)
     idleTimeoutMillis: 10000, // 10 seconds
     connectionTimeoutMillis: 5000, // 5 seconds timeout
     allowExitOnIdle: true, // Important for serverless
