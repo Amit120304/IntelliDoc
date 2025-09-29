@@ -29,7 +29,7 @@ const findSimilarDocumentsTool = tool(
 
 
 const llm = new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash-lite",
+    model: "gemini-2.0-flash-lite",
     temperature: 0,
 });
 
